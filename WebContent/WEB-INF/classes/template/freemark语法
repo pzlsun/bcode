@@ -1,0 +1,692 @@
+FreeMarke开发指南
+
+
+1概念
+2指令
+if, else, elseif 
+switch, case, default, break
+list, break 
+include 
+Import 
+compress 
+escape, noescape 
+assign 
+global 
+setting 
+macro, nested, return
+t, lt, rt 
+3一些常用方法或注意事项 
+表达式转换类 
+数字循环 
+对浮点取整数 
+给变量默认值 
+判断对象是不是null 
+常用格式化日期 
+添加全局共享变量数据模型 
+直接调用java对象的方法 
+字符串处理(内置方法) 
+在模板里对sequences和hashes初始化 
+注释标志 
+sequences内置方法 
+hashes内置方法 
+4 freemarker在web开发中注意事项 
+web中常用的几个对象 
+view中值的搜索顺序 
+在模板里ftl里使用标签 
+如何初始化共享变量 
+与webwork整合配置 
+5高级方法 
+自定义方法 
+自定义 Transforms 
+
+                                  
+1概念
+最常用的3个概念
+sequence  序列，对应java里的list、数组等非键值对的集合
+hash      键值对的集合
+namespace 对一个ftl文件的引用,利用这个名字可以访问到该ftl文件的资源
+
+2指令
+if, else, elseif
+语法
+<#if condition>
+  ...
+<#elseif condition2>
+  ...
+<#elseif condition3>
+  ...
+...
+<#else>
+  ...
+</#if>
+用例
+<#if x = 1>
+  x is 1
+</#if>
+
+<#if x = 1>
+  x is 1
+<#else>
+  x is not 1
+</#if>
+
+switch, case, default, break
+语法
+<#switch value>
+  <#case refValue1>
+    ...
+    <#break>
+  <#case refValue2>
+    ...
+    <#break>
+  ...
+  <#case refValueN>
+    ...
+    <#break>
+  <#default>
+    ...
+</#switch>
+
+用例
+字符串
+<#switch being.size>
+  <#case "small">
+     This will be processed if it is small
+     <#break>
+  <#case "medium">
+     This will be processed if it is medium
+     <#break>
+  <#case "large">
+     This will be processed if it is large
+     <#break>
+  <#default>
+     This will be processed if it is neither
+</#switch>
+数字
+<#switch x>
+  <#case x = 1>
+    1
+  <#case x = 2>
+    2
+  <#default>
+    d
+</#switch>
+
+如果x=1 输出 1 2, x=2输出 2, x=3 输出d
+
+list, break
+语法
+<#list sequence as item>
+...
+<#if item = "spring"><#break></#if>
+...
+</#list>
+关键字
+item_index:是list当前值的下标
+item_has_next:判断list是否还有值
+
+用例
+<#assign seq = ["winter", "spring", "summer", "autumn"]>
+<#list seq as x>
+  ${x_index + 1}. ${x}<#if x_has_next>,</#if>
+</#list>
+
+输出
+  1. winter,
+  2. spring,
+  3. summer,
+  4. autumn  
+
+
+include
+语法
+<#include filename>
+or
+<#include filename options>
+options包含两个属性
+encoding=”GBK” 编码格式
+parse=true 是否作为ftl语法解析,默认是true，false就是以文本方式引入.注意在ftl文件里布尔值都是直接赋值的如parse=true,而不是parse=”true”
+用例
+/common/copyright.ftl包含内容
+Copyright 2001-2002 ${me}<br>
+All rights reserved.  
+模板文件
+<#assign me = "Juila Smith">
+<h1>Some test</h1>
+<p>Yeah.
+<hr>
+<#include "/common/copyright.ftl" encoding=”GBK”> 
+输出结果
+<h1>Some test</h1>
+<p>Yeah.
+<hr>
+Copyright 2001-2002 Juila Smith
+All rights reserved. 
+
+Import
+语法
+<#import path as hash>
+类似于java里的import,它导入文件，然后就可以在当前文件里使用被导入文件里的宏组件
+
+用例
+
+假设mylib.ftl里定义了宏copyright那么我们在其他模板页面里可以这样使用
+<#import "/libs/mylib.ftl" as my>
+
+<@my.copyright date="1999-2002"/>
+
+"my"在freemarker里被称作namespace
+
+compress
+语法
+<#compress>
+  ...
+</#compress>
+用来压缩空白空间和空白的行
+用例
+<#assign x = "    moo  \n\n   ">
+(<#compress>
+  1 2  3   4    5
+  ${moo}
+  test only
+
+  I said, test only
+
+</#compress>)  
+输出
+(1 2 3 4 5
+moo
+test only
+I said, test only) 
+escape, noescape
+语法
+<#escape identifier as expression>
+  ...
+  <#noescape>...</#noescape>
+  ...
+</#escape>
+用例
+主要使用在相似的字符串变量输出，比如某一个模块的所有字符串输出都必须是html安全的，这个时候就可以使用该表达式
+<#escape x as x?html>
+  First name: ${firstName}
+  <#noescape>Last name: ${lastName}</#noescape>
+  Maiden name: ${maidenName}
+</#escape>
+相同表达式  
+  First name: ${firstName?html}
+  Last name: ${lastName }
+  Maiden name: ${maidenName?html}
+assign
+语法
+<#assign name=value>
+or
+<#assign name1=value1 name2=value2 ... nameN=valueN>
+or
+<#assign same as above... in namespacehash>
+or
+<#assign name>
+  capture this
+</#assign>
+or
+<#assign name in namespacehash>
+  capture this
+</#assign>
+用例
+生成变量,并且给变量赋值
+给seasons赋予序列值
+<#assign seasons = ["winter", "spring", "summer", "autumn"]>
+
+给变量test加1
+<#assign test = test + 1>
+
+给my namespage 赋予一个变量bgColor,下面可以通过my.bgColor来访问这个变量
+<#import "/mylib.ftl" as my>
+<#assign bgColor="red" in my>
+
+将一段输出的文本作为变量保存在x里
+下面的阴影部分输出的文本将被赋值给x
+<#assign x>
+  <#list 1..3 as n>
+    ${n} <@myMacro />
+  </#list>
+</#assign>
+Number of words: ${x?word_list?size}
+${x}
+
+<#assign x>Hello ${user}!</#assign>     error
+<#assign x=” Hello ${user}!”>         true
+
+同时也支持中文赋值，如：
+<#assign 语法>
+  java
+</#assign>
+${语法}
+打印输出:
+java
+global
+语法
+<#global name=value>
+or
+<#global name1=value1 name2=value2 ... nameN=valueN>
+or
+<#global name>
+  capture this
+</#global>
+
+全局赋值语法，利用这个语法给变量赋值，那么这个变量在所有的namespace中是可见的,如果这个变量被当前的assign语法覆盖 如<#global x=2> <#assign x=1> 在当前页面里x=2将被隐藏，或者通过${.global.x}来访问
+
+setting
+语法
+<#setting name=value>
+用来设置整个系统的一个环境
+locale
+number_format
+boolean_format
+date_format, time_format, datetime_format
+time_zone
+classic_compatible
+用例
+假如当前是匈牙利的设置，然后修改成美国
+${1.2}
+<#setting locale="en_US">
+${1.2}  
+输出
+1,2
+1.2
+因为匈牙利是采用“,”作为十进制的分隔符，美国是用“.”
+
+ 
+
+macro, nested, return
+语法
+
+<#macro name param1 param2 ... paramN>
+  ...
+  <#nested loopvar1, loopvar2, ..., loopvarN>
+  ...
+  <#return>
+  ...
+</#macro>
+用例
+<#macro test foo bar="Bar" baaz=-1>
+  Test text, and the params: ${foo}, ${bar}, ${baaz}
+</#macro>
+<@test foo="a" bar="b" baaz=5*5-2/>
+<@test foo="a" bar="b"/>
+<@test foo="a" baaz=5*5-2/>
+<@test foo="a"/> 
+输出
+  Test text, and the params: a, b, 23
+  Test text, and the params: a, b, -1
+  Test text, and the params: a, Bar, 23
+  Test text, and the params: a, Bar, -1
+定义循环输出的宏
+<#macro list title items>
+  <p>${title?cap_first}:
+  <ul>
+    <#list items as x>
+      <li>${x?cap_first}
+    </#list>
+  </ul>
+</#macro>
+<@list items=["mouse", "elephant", "python"] title="Animals"/>
+输出结果  
+<p>Animals:
+  <ul>
+      <li>Mouse
+      <li>Elephant
+      <li>Python
+  </ul>
+包含body的宏
+<#macro repeat count>
+  <#list 1..count as x>
+    <#nested x, x/2, x==count>
+  </#list>
+</#macro>
+<@repeat count=4 ; c halfc last>
+  ${c}. ${halfc}<#if last> Last!</#if>
+</@repeat> 
+输出
+1. 0.5
+  2. 1
+  3. 1.5
+  4. 2 Last!
+
+ 
+
+
+t, lt, rt
+语法
+<#t> 去掉左右空白和回车换行
+
+<#lt>去掉左边空白和回车换行
+
+<#rt>去掉右边空白和回车换行
+
+<#nt>取消上面的效果
+
+
+3一些常用方法或注意事项
+
+
+表达式转换类
+${expression}计算expression并输出
+#{ expression }数字计算#{ expression ;format}安格式输出数字format为M和m
+M表示小数点后最多的位数,m表示小数点后最少的位数如#{121.2322;m2M2}输出121.23
+
+ 
+
+
+数字循环
+1..5 表示从1到5，原型number..number
+对浮点取整数
+${123.23?int} 输出123
+给变量默认值
+${var?default(“hello world<br>”)?html}如果var is null那么将会被hello world<br>替代
+
+判断对象是不是null
+    <#if mouse?exists>
+      Mouse found
+<#else>
+也可以直接${mouse?if_exists})输出布尔形
+常用格式化日期
+ openingTime必须是Date型,详细查看freemarker文档 Reference->build-in referece->build-in for date
+
+${openingTime?date}
+${openingTime?date_time}
+${openingTime?time}
+
+添加全局共享变量数据模型
+在代码里的实现
+    cfg = Configuration.getDefaultConfiguration();
+cfg.setSharedVariable("global", "you good"); 
+页面实现可以通过global指令,具体查看指令里的global部分
+直接调用java对象的方法
+${object.methed(args)} 
+
+字符串处理(内置方法)
+html安全输出
+“abc<table>sdfsf”?html 
+返回安全的html输出,替换掉html代码
+xml安全输出
+var?xml   
+substring的用法
+<#assign user=”hello jeen”>
+${user[0]}${user[4]} 
+${user[1..4]}
+输出 :
+ho
+ello  
+类似String.split的用法 
+ “abc;def;ghi”?split(“;”)返回sequence
+将字符串按空格转化成sequence,然后取sequence的长度
+     var?word_list  效果同 var?split(“ ”) 
+ var?word_list?size
+
+取得字符串长度
+var?length
+
+大写输出字符
+var?upper_case
+
+小写输出字符
+var?lower_case
+
+首字符大写
+var?cap_first
+
+首字符小写
+var?uncap_first
+
+去掉字符串前后空格 
+var?trim
+
+每个单词的首字符大写
+var?capitalize
+
+类似String.indexof: 
+ “babcdabcd”?index_of(“abc”) 返回1
+ “babcdabcd”?index_of(“abc”,2) 返回5
+类似String.lastIndexOf 
+ last_index_of和String.lastIndexOf类似,同上
+
+下面两个可能在代码生成的时候使用（在引号前加”\”）
+j_string: 在字符串引号前加”\”
+ <#assign beanName = 'The "foo" bean.'>
+ String BEAN_NAME = "${beanName?j_string}";
+打印输出:
+ String BEAN_NAME = "The \"foo\" bean.";
+js_string:
+ <#assign user = "Big Joe's \"right hand\".">
+<script>
+  alert("Welcome ${user}!");
+</script>  
+打印输出
+ alert("Welcome Big Joe\'s \"right hand\"!");
+
+替换字符串 replace
+${s?replace(‘ba’, ‘XY’ )}
+${s?replace(‘ba’, ‘XY’ , ‘规则参数’)}将s里的所有的ba替换成xy 规则参数包含: i r m s c f 具体含义如下:
+· i: 大小写不区分.
+· f: 只替换第一个出现被替换字符串的字符串
+· r:  XY是正则表达式
+· m: Multi-line mode for regular expressions. In multi-line mode the expressions ^ and $ match just after or just before, respectively, a line terminator or the end of the string. By default these expressions only match at the beginning and the end of the entire string.
+· s: Enables dotall mode for regular expressions (same as Perl singe-line mode). In dotall mode, the expression . matches any character, including a line terminator. By default this expression does not match line terminators.
+· c: Permits whitespace and comments in regular expressions.
+
+
+在模板里对sequences和hashes初始化
+sequences 
+
+1. [“you”,”me”,”he”] 
+2. 1..100
+3. [ {“Akey”:”Avalue”},{“Akey1”:”Avalue1”},
+{“Bkey”:”Bvalue”},{“Bkey1”:”Bvalue1”},
+]
+
+  
+hashes      {“you”:”a”,”me”:”b”,”he”:”c”}
+
+
+注释标志
+<#-- 
+这里是注释 
+-->
+旧版本的freemarker采用的是<#comment> 注释 </#comment>方法
+
+sequences内置方法
+sequence?first
+返回sequence的第一个值;前提条件sequence不能是null
+sequence?last
+ 返回sequence最后一个值
+sequence?reverse
+ 反转sequence的值
+sequence?size
+ 返回sequence的大小
+sequence?sort
+ 对sequence按里面的对象toString()的结果进行排序
+sequence?sort_by(value)
+对sequence 按里面的对象的属性value进行排序
+如: sequence里面放入的是10 个user对象，user对象里面包含name,age等属性
+sequence?sort_by(name) 表示所有的user按user.name进行排序
+hashes内置方法
+hash?keys
+ 返回hash里的所有keys, 返回结果类型sequence
+hash?values
+ 返回hash里的所有value, 返回结果类型sequence
+4 freemarker在web开发中注意事项
+freemarker与webwork整合
+web中常用的几个对象
+Freemarker的ftl文件中直接使用内部对象:
+${Request ["a"]}
+${RequestParameters["a"]}
+${Session ["a"]}
+${Application ["a"]}
+${JspTaglibs ["a"]}
+
+与webwork整合之后 通过配置的servlet 已经把request,session等对象置入了数据模型中
+在view中存在下面的对象
+  我们可以在ftl中${req}来打印req对象
+· req - the current HttpServletRequest 
+· res - the current HttpServletResponse 
+· stack - the current OgnlValueStack 
+· ognl - the OgnlTool instance 
+· webwork - an instance of FreemarkerWebWorkUtil 
+· action - the current WebWork action 
+· exception - optional the Exception instance, if the view is a JSP exception or Servlet exception view 
+view中值的搜索顺序
+${name}将会以下面的顺序查找name值
+· freemarker variables 
+· value stack 
+· request attributes 
+· session attributes 
+· servlet context attributes 
+在模板里ftl里使用标签
+注意，如果标签的属性值是数字，那么必须采用nubmer=123方式给属性赋值
+JSP页面
+<%@page contentType="text/html;charset=ISO-8859-2" language="java"%>
+<%@taglib uri="/WEB-INF/struts-html.tld" prefix="html"%>
+<%@taglib uri="/WEB-INF/struts-bean.tld" prefix="bean"%>
+
+<html>
+  <body>
+    <h1><bean:message key="welcome.title"/></h1>
+    <html:errors/>
+    <html:form action="/query">
+      Keyword: <html:text property="keyword"/><br>
+      Exclude: <html:text property="exclude"/><br>
+      <html:submit value="Send"/>
+    </html:form>
+  </body>
+</html> 
+模板ftl页面
+<#assign html=JspTaglibs["/WEB-INF/struts-html.tld"]>
+<#assign bean=JspTaglibs["/WEB-INF/struts-bean.tld"]>
+
+<html>
+  <body>
+    <h1><@bean.message key="welcome.title"/></h1>
+    <@html.errors/>
+    <@html.form action="/query">
+      Keyword: <@html.text property="keyword"/><br>
+      Exclude: <@html.text property="exclude"/><br>
+      <@html.submit value="Send"/>
+    </@html.form>
+  </body>
+</html> 
+
+
+如何初始化共享变量
+1． 初始化全局共享数据模型
+freemark在web上使用的时候对共享数据的初始化支持的不够,不能在配置初始化的时候实现，而必须通过ftl文件来初始化全局变量。这是不能满主需求的，我们需要在servlet init的时候留出一个接口来初始化系统的共享数据
+具体到和webwork整合,因为本身webwork提供了整合servlet,如果要增加全局共享变量，可以通过修改com.opensymphony.webwork.views.freemarker.FreemarkerServlet来实现,我们可以在这个servlet初始化的时候来初始化全局共享变量
+与webwork整合配置
+配置web.xml
+<servlet>
+    <servlet-name>freemarker</servlet-name>
+    <servlet-class>com.opensymphony.webwork.views.freemarker.FreemarkerServlet</servlet-class>
+    <init-param>
+      <param-name>TemplatePath</param-name>
+<param-value>/</param-value>
+<!—模板载入文件夹，这里相对context root，递归获取该文件夹下的所有模板-->
+    </init-param>
+    <init-param>
+      <param-name>NoCache</param-name> <!—是否对模板缓存-->
+      <param-value>true</param-value>
+    </init-param>
+    <init-param>
+      <param-name>ContentType</param-name>
+      <param-value>text/html</param-value>
+    </init-param>
+    <init-param>
+<param-name>template_update_delay</param-name>
+<!—模板更新时间,0表示每次都更新,这个适合开发时候-->
+      <param-value>0</param-value>
+    </init-param>
+    <init-param>
+      <param-name>default_encoding</param-name>
+      <param-value>GBK</param-value>
+    </init-param>
+    <init-param>
+      <param-name>number_format</param-name>
+      <param-value>0.##########</param-value><!—数字显示格式-->
+    </init-param>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>freemarker</servlet-name>
+    <url-pattern>*.ftl</url-pattern>
+  </servlet-mapping>
+
+5高级方法
+自定义方法
+${timer("yyyy-MM-dd H:mm:ss", x)}
+${timer("yyyy-MM-dd ", x)}
+
+在模板中除了可以通过对象来调用方法外（${object.methed(args)}）也可以直接调用java实现的方法，java类必须实现接口TemplateMethodModel的方法exec(List args). 下面以把毫秒的时间转换成按格式输出的时间为例子
+public class LongToDate implements TemplateMethodModel {
+    
+public TemplateModel exec(List args) throws TemplateModelException {
+SimpleDateFormat mydate = new SimpleDateFormat((String) args.get(0)));
+        return mydate.format(new Date(Long.parseLong((String)args.get(1)));
+    }
+}  
+将LongToDate对象放入到数据模型中
+root.put("timer", new IndexOfMethod());
+ftl模板里使用
+<#assign x = "123112455445">
+${timer("yyyy-MM-dd H:mm:ss", x)}
+${timer("yyyy-MM-dd ", x)}
+
+输出
+2001-10-12 5:21:12
+2001-10-12
+
+自定义 Transforms
+实现自定义的<@transform>文本或表达式</@transform>的功能,允许对中间的最终文本进行解析转换
+
+例子：实现<@upcase>str</@upcase> 将str转换成STR 的功能
+
+代码如下：
+import java.io.*;
+import java.util.*;
+import freemarker.template.TemplateTransformModel;
+
+class UpperCaseTransform implements TemplateTransformModel {
+
+    public Writer getWriter(Writer out, Map args) {
+        return new UpperCaseWriter(out);
+    }
+
+    private class UpperCaseWriter extends Writer {
+       
+        private Writer out;
+           
+        UpperCaseWriter (Writer out) {
+            this.out = out;
+        }
+
+        public void write(char[] cbuf, int off, int len)
+                throws IOException {
+            out.write(new String(cbuf, off, len).toUpperCase());
+        }
+
+        public void flush() throws IOException {
+            out.flush();
+        }
+
+        public void close() {
+        }
+    }
+}  
+然后将此对象put到数据模型中
+root.put("upcase", new UpperCaseTransform());
+
+在view(ftl)页面中可以如下方式使用
+
+<@upcase>
+hello world
+</@upcase>
+
+打印输出:
+HELLO WORLD
