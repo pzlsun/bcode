@@ -4,9 +4,9 @@
 
 1.编写freemarker 代码模板,工程中有模板示例,src/template/ , 并有freemarker语法简介.关于freemarker,请自行查阅资料
 
-1. Servlet工程,可以使用Tomcat部署
+2. Servlet工程,可以使用Tomcat部署
 
-2.部署运行后,访问http://localhost:8080/buildcode, 上传pdm文件,填写自己的工程名,然后提交
+3.部署运行后,访问http://localhost:8080/buildcode, 上传pdm文件,填写自己的工程名,然后提交
 
-3.网页上会显示生成的代码的zip下载链接,下载解压后可使用
+4.网页上会显示生成的代码的zip下载链接,下载解压后可使用
 
